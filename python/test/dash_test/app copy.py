@@ -4,6 +4,7 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 
+from base64 import encode
 from pydoc import classname
 from turtle import left
 from unicodedata import category
@@ -13,10 +14,12 @@ from dash import dash, dcc, html, Input, Output, State, callback_context
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
+import openpyxl
+
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-
+original_data = pd.read_excel('python/test/dash_test/일룸_책상_구매데이터_1차_220513_220626_v0.1_220629_사후분석.xlsx')
 oh_test = pd.read_csv("python/test/dash_test/oh_매출테스트.csv")
 # python\test\dash_test\oh_매출테스트.csv
 
@@ -49,6 +52,11 @@ category = {
    
 #     checklists.append(make_checklist(category))
     
+
+# original_data = pd.read_excel('일룸_책상_구매데이터_1차_220513_220626_v0.1_220629_사후분석.xlsx')
+# date_sum_prc = pd.DataFrame(original_data.groupby('date')['item_prc'].sum())
+# date_count = pd.DataFrame(original_data.groupby('date')['item_title'].count())
+# result_1 = pd.concat([date_sum_prc,date_count],axis=1).reset_index()
 
 
 
@@ -192,17 +200,35 @@ def render_content(tab):
         
         
     elif tab == 'tab-2':
+        date_sum_prc = pd.DataFrame(original_data.groupby('date')['item_prc'].sum())
+        date_count = pd.DataFrame(original_data.groupby('date')['item_title'].count())
+        result_1 = pd.concat([date_sum_prc,date_count],axis=1).reset_index()
+        date = list(result_1['date'].astype('str').str[2:])
+        sum_prc=list(result_1['item_prc'])
+        date_count=list(result_1['item_title'])
         return html.Div([
             html.H3('Tab content 2'),
+            
             dcc.Graph(
-                figure=dict(
-                    data=[dict(
-                        x=[1, 2, 3],
-                        y=[5, 10, 6],
-                        type='bar'
-                    )]
-                )
+                figure={
+                    'data':[
+                        dict(x=date , y= sum_prc, type='go.bar')
+                    ]
+                }
             )
+# fig = px.line(x=date, y=sum_prc, color=px.Constant("This year"),
+#                 labels=dict(x="Fruit", y="Amount", color="Time Period"))
+# fig.add_trace(go.Bar(x=date, y=date_count, name="Last year"))
+# fig.show()
+            # dcc.Graph(
+            #     figure=dict(
+            #         data=[dict(
+            #             x=[1, 2, 3],
+            #             y=[5, 10, 6],
+            #             type='bar'
+            #         )]
+            #     )
+            # )
         ]),
         
         
