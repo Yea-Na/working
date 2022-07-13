@@ -10,15 +10,18 @@ from turtle import left
 from unicodedata import category
 
 from dash import dash, dcc, html, Input, Output, State, callback_context
-
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 import openpyxl
+import datetime
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
+
+
+## 데이터 불러오기
 original_data = pd.read_excel('python/test/dash_test/일룸_책상_구매데이터_1차_220513_220626_v0.1_220629_사후분석.xlsx')
 oh_test = pd.read_csv("python/test/dash_test/oh_매출테스트.csv")
 # python\test\dash_test\oh_매출테스트.csv
@@ -35,28 +38,28 @@ category = {
     '식음료':['간편식', '음료','간식', '양념', '기타']    
 }
 
-# print(category.index(category.keys('가구')))
-# print(category.items())
 
-# def make_checklist(category):
-#     return html.Div([
-#         dcc.Checklist([k], className='cat_large'),
-#         html.Div([
-#             dcc.Checklist(v, className='cat_small'),
-#             ], style={'text-indent':'15px'}),
-#         html.Br(),
-#     ])
-        
-# checklists = []
-# for k,v in category.items():
-   
-#     checklists.append(make_checklist(category))
     
 
-# original_data = pd.read_excel('일룸_책상_구매데이터_1차_220513_220626_v0.1_220629_사후분석.xlsx')
-# date_sum_prc = pd.DataFrame(original_data.groupby('date')['item_prc'].sum())
-# date_count = pd.DataFrame(original_data.groupby('date')['item_title'].count())
-# result_1 = pd.concat([date_sum_prc,date_count],axis=1).reset_index()
+date_sum_prc = pd.DataFrame(original_data.groupby('date')['item_prc'].sum())
+date_count = pd.DataFrame(original_data.groupby('date')['item_title'].count())
+result_1 = pd.concat([date_sum_prc,date_count],axis=1).reset_index()
+test = []
+for i in result_1['date']:
+    test.append(datetime.datetime.strptime(str(i),'%Y%m%d').date())
+result_1 = pd.concat([result_1,pd.DataFrame(test)], axis=1,names='date_3')
+
+test = []
+for i in result_1[0]:
+    test.append(datetime.datetime.isocalendar(i).week)
+result_1 = pd.concat([result_1,pd.DataFrame(test)], axis=1)
+result_1.columns=['date','item_prc','count','date_2','week']
+result_2 = result_1.groupby('week').sum().reset_index()
+result_2['item_prc_2'] = result_2['item_prc'].astype('str').str[:-7]
+
+week = list(result_2['week'].astype('str'))
+sum_prc=list(result_2['item_prc_2'])
+date_count=list(result_2['count'])
 
 
 
@@ -94,6 +97,7 @@ app.layout = html.Div([
             
             
             html.Div(checklists),
+            # html.Div([   ])
 
             
             html.Div([
@@ -111,12 +115,12 @@ app.layout = html.Div([
     html.Div(children=[
         html.Div(children=[        
         dcc.Tabs(id='tabs-example-1', value='tab-1', children=[
-        dcc.Tab(label='Tab one', value='tab-1'),
-        dcc.Tab(label='Tab two', value='tab-2'),
-        dcc.Tab(label='Tab three', value='tab-3'),
+        dcc.Tab(label='업종별 온라인 시장 현황', value='tab-1',),
+        dcc.Tab(label='브랜드별 시장 포지션', value='tab-2'),
+        dcc.Tab(label='브랜드별 판매 채널', value='tab-3'),
         ]),
         html.Div(id='tabs-example-content-1'),
-
+        
 
         ], style={'float':'left', 'width':'75%'})     
          
@@ -146,7 +150,23 @@ def sync_checklists(small_selected, large_selected):
         small_selected = small if large_selected else []
     return small_selected, large_selected
 
-
+@app.callback(
+    # Output("cat_small_0", "value"),
+    Output("cat_large_0", "value"),
+    Input("cat_small_0", "value"),
+    Input("cat_large_0", "value"),
+)
+def sync_checklists_2(small_selected, large_selected):
+    ctg = callback_context
+    input_id = ctg.triggered[0]["prop_id"].split(".")[0]
+    print(input_id)
+    print(small_selected)
+    print(category[0])
+    # if input_id == "cat_small_0":
+    #     large_selected = large_selected if set(small_selected) == set(cat_small_0) else []
+    # else:
+    #     small_selected = ["침대"] if large_selected else []
+    return large_selected
 
 
 
@@ -167,70 +187,61 @@ def test_output(value):
 )
 def render_content(tab):
     if tab == 'tab-1':
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=week,y=sum_prc,name='매출총합',marker_color='rgb(55, 83, 109)'))
+        fig.add_trace(go.Bar(x=week,y=date_count,name='매출건수',marker_color='rgb(26, 118, 255)'))
+        fig.update_layout(
+                        title='2022년 업종별 온라인 시장 현황 [주별]',
+                        xaxis=dict(title='주차',tickfont_size=14),
+                        yaxis=dict(title='단위:천만',titlefont_size=16,tickfont_size=14),
+                        legend=dict(x=0,y=1.0,bgcolor='rgba(255, 255, 255, 0)',bordercolor='rgba(255, 255, 255, 0)'),
+                        barmode='group',
+                        bargap=0.5, # gap between bars of adjacent location coordinates.
+                        bargroupgap=0.5 # gap between bars of the same location coordinate.
+                        ,
+                        )
+        
         return html.Div([
-            html.Div(children=[            
-            dcc.Graph(
-                figure={
-                    'data': [
-                        {'x': [1, 2, 3], 'y': [4, 1, 2], 'type': 'bar', 'name': 'SF'},
-                        {'x': [1, 2, 3], 'y': [2, 4, 5], 'type': 'bar', 'name': u'Montréal'},
-                    ],
-                    'layout': {
-                        'title': 'Tab content2'
-                    }
-                }
-            )
+            html.Div(children=[      
+      
+            dcc.Graph(figure=fig)
             ], style={'height':'10%'}),
             
             
             html.Div(children=[            
-            dcc.Graph(
-                figure={
-                    'data': [
-                        {'x': [1, 2, 3], 'y': [4, 1, 2], 'type': 'bar', 'name': 'SF'},
-                        {'x': [1, 2, 3], 'y': [2, 4, 5], 'type': 'bar', 'name': u'Montréal'},
-                    ],
-                    'layout': {
-                        'title': 'Tab content2'
-                    }
-                }
-            )
+            # html.H3('Tab content 2'),
+            dcc.Graph(figure=fig)
             ], style={'height':'50%'})
         ])
         
         
     elif tab == 'tab-2':
-        date_sum_prc = pd.DataFrame(original_data.groupby('date')['item_prc'].sum())
-        date_count = pd.DataFrame(original_data.groupby('date')['item_title'].count())
-        result_1 = pd.concat([date_sum_prc,date_count],axis=1).reset_index()
-        date = list(result_1['date'].astype('str').str[2:])
-        sum_prc=list(result_1['item_prc'])
-        date_count=list(result_1['item_title'])
+
         return html.Div([
             html.H3('Tab content 2'),
             
             dcc.Graph(
                 figure={
                     'data':[
-                        dict(x=date , y= sum_prc, type='go.bar')
+                        dict(x=week , y= sum_prc, type='bar', )
+                        
                     ]
                 }
             )
-# fig = px.line(x=date, y=sum_prc, color=px.Constant("This year"),
-#                 labels=dict(x="Fruit", y="Amount", color="Time Period"))
-# fig.add_trace(go.Bar(x=date, y=date_count, name="Last year"))
-# fig.show()
-            # dcc.Graph(
-            #     figure=dict(
-            #         data=[dict(
-            #             x=[1, 2, 3],
-            #             y=[5, 10, 6],
-            #             type='bar'
-            #         )]
-            #     )
-            # )
+
         ]),
-        
+    elif tab == 'tab-3':
+        fig = go.Figure(data=[go.Scatter(x=[1, 2, 3], y=[4, 1, 2])])
+
+        return html.Div([
+            
+            html.H3('Tab content 3'),   
+
+
+            dcc.Graph(figure=fig)
+
+
+        ]),        
         
 
 
