@@ -56,9 +56,11 @@ result_1 = pd.concat([result_1,pd.DataFrame(test)], axis=1)
 result_1.columns=['date','item_prc','count','date_2','week']
 result_2 = result_1.groupby('week').sum().reset_index()
 result_2['item_prc_2'] = result_2['item_prc'].astype('str').str[:-7]
+result_2['item_prc_2'] = result_2['item_prc_2'].astype('int')
+result_2['item_prc_3'] = result_2['item_prc'].astype('str').str[:-6].astype('int')
 
 week = list(result_2['week'].astype('str'))
-sum_prc=list(result_2['item_prc_2'])
+sum_prc=list(result_2['item_prc_3'])
 date_count=list(result_2['count'])
 
 
@@ -74,11 +76,11 @@ def make_checklist(category):
         
 checklists = []
 for index,(k,v) in enumerate(category.items()):
-    print(index, k,v)
+    # print(index, k,v)
     checklists.append(make_checklist(enumerate(category.items())))
 
     
-
+large =["All"]
 small = ["New York City", "Montréal", "San Francisco"]
 
 ##### 사이드바 = 체크박스
@@ -87,23 +89,23 @@ app.layout = html.Div([
     html.Div([
         html.Div(id='test_output',children=[html.Br()], style={'float':'left', 'width':'5%'}),
         html.Div(children=[
+
             html.Br(),
             html.Br(),
             html.Br(),
             html.Br(),
             html.Br(),
-            html.Br(),
-            html.Br(), 
             
             
             html.Div(checklists),
-            # html.Div([   ])
+            html.Br(),
+            html.Br(),
 
             
-            html.Div([
-                    dcc.Checklist(["All"], [], id="large-checklist"),
-                    dcc.Checklist(small, [], id="small-checklist"),
-                    ])
+            # html.Div([
+            #         dcc.Checklist(large, [], id="large-checklist"),
+            #         dcc.Checklist(small, [], id="small-checklist"),
+            #         ])
             
             
             
@@ -133,25 +135,26 @@ app.layout = html.Div([
 print(id)
 
 
-@app.callback(
-    Output("small-checklist", "value"),
-    Output("large-checklist", "value"),
-    Input("small-checklist", "value"),
-    Input("large-checklist", "value"),
-)
-def sync_checklists(small_selected, large_selected):
-    ctx = callback_context
-    input_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    print(input_id)
-    print(small_selected)
-    if input_id == "small-checklist":
-        large_selected = ["All"] if set(small_selected) == set(small) else []
-    else:
-        small_selected = small if large_selected else []
-    return small_selected, large_selected
+# @app.callback(
+#     Output("small-checklist", "value"),
+#     Output("large-checklist", "value"),
+#     Input("small-checklist", "value"),
+#     Input("large-checklist", "value"),
+# )
+# def sync_checklists(small_selected, large_selected):
+#     ctx = callback_context
+#     input_id = ctx.triggered[0]["prop_id"].split(".")[0]
+#     if input_id == "small-checklist":
+#         large_selected = ["All"] if set(small_selected) == set(small) else []
+#         # print(small_selected)
+#         # print(small)
+#         # print(large_selected)
+#     else:
+#         small_selected = small if large_selected else []
+#     return small_selected, large_selected
 
 @app.callback(
-    # Output("cat_small_0", "value"),
+    Output("cat_small_0", "value"),
     Output("cat_large_0", "value"),
     Input("cat_small_0", "value"),
     Input("cat_large_0", "value"),
@@ -159,26 +162,28 @@ def sync_checklists(small_selected, large_selected):
 def sync_checklists_2(small_selected, large_selected):
     ctg = callback_context
     input_id = ctg.triggered[0]["prop_id"].split(".")[0]
-    print(input_id)
-    print(small_selected)
-    print(category[0])
-    # if input_id == "cat_small_0":
-    #     large_selected = large_selected if set(small_selected) == set(cat_small_0) else []
-    # else:
-    #     small_selected = ["침대"] if large_selected else []
-    return large_selected
+    # print(input_id)
+
+    if input_id == "cat_small_0":
+        large_selected = list(category.keys())[0] if set(small_selected) == set(category.get('가구')) else []
+        # print(small_selected)
+        # print(category.get('가구'))
+        # print(large_selected)
+    else:
+        small_selected = category.get('가구') if large_selected else []
+    return small_selected, large_selected
 
 
 
 
 
-@app.callback(
-    Output('test_output', 'children'),
-    Input('cat_small_0','value')
-)
+# @app.callback(
+#     Output('test_output', 'children'),
+#     Input('cat_small_0','value')
+# )
 
-def test_output(value):
-    return f'You have selected {value}'
+# def test_output(value):
+#     return f'You have selected {value}'
 
 ### 탭
 @app.callback(
@@ -188,10 +193,11 @@ def test_output(value):
 def render_content(tab):
     if tab == 'tab-1':
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=week,y=sum_prc,name='매출총합',marker_color='rgb(55, 83, 109)'))
-        fig.add_trace(go.Bar(x=week,y=date_count,name='매출건수',marker_color='rgb(26, 118, 255)'))
+        fig.add_trace(go.Bar(x=week,y=sum_prc,name='매출총합',text=sum_prc,textposition='auto',marker_color='rgb(26, 118, 255)'))
+        fig.add_trace(go.Bar(x=week,y=date_count,name='매출건수',text=date_count,textposition='auto',marker_color='rgb(55, 83, 109)'))
         fig.update_layout(
-                        title='2022년 업종별 온라인 시장 현황 [주별]',
+                        title='2022년 업종별 온라인 시장 현황 [주별]',titlefont_size=20,
+                        plot_bgcolor='rgba(243, 249, 252, 0.92)',
                         xaxis=dict(title='주차',tickfont_size=14),
                         yaxis=dict(title='단위:천만',titlefont_size=16,tickfont_size=14),
                         legend=dict(x=0,y=1.0,bgcolor='rgba(255, 255, 255, 0)',bordercolor='rgba(255, 255, 255, 0)'),
@@ -202,16 +208,15 @@ def render_content(tab):
                         )
         
         return html.Div([
-            html.Div(children=[      
-      
-            dcc.Graph(figure=fig)
-            ], style={'height':'10%'}),
+            html.Div(children=[           
+                    dcc.Graph(figure=fig)
+                    ], style={'height':'10%'}),
             
             
             html.Div(children=[            
-            # html.H3('Tab content 2'),
-            dcc.Graph(figure=fig)
-            ], style={'height':'50%'})
+                    # html.H3('Tab content 2'),
+                    dcc.Graph(figure=fig)
+                    ], style={'height':'50%'})
         ])
         
         
