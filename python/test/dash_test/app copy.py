@@ -6,10 +6,14 @@
 
 from base64 import encode
 from pydoc import classname
-from turtle import left
+from tkinter.font import Font
+from turtle import bgcolor, color, left
 from unicodedata import category
 
 from dash import dash, dcc, html, Input, Output, State, callback_context
+from matplotlib import backend_tools, style
+from matplotlib.font_manager import _Style, FontEntry, FontProperties
+from numpy import size
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
@@ -25,6 +29,8 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 original_data = pd.read_excel('python/test/dash_test/일룸_책상_구매데이터_1차_220513_220626_v0.1_220629_사후분석.xlsx')
 oh_test = pd.read_csv("python/test/dash_test/oh_매출테스트.csv")
 # python\test\dash_test\oh_매출테스트.csv
+
+
 
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -154,6 +160,7 @@ print(id)
 #     return small_selected, large_selected
 
 @app.callback(
+    
     Output("cat_small_0", "value"),
     Output("cat_large_0", "value"),
     Input("cat_small_0", "value"),
@@ -172,6 +179,61 @@ def sync_checklists_2(small_selected, large_selected):
     else:
         small_selected = category.get('가구') if large_selected else []
     return small_selected, large_selected
+
+
+
+# @app.callback(
+#     for index,(k,v) in enumerate(category.items()):
+        
+        
+
+
+# Output("cat_small_0", "value"),
+# Output("cat_large_0", "value"),
+# Input("cat_small_0", "value"),
+# Input("cat_large_0", "value"),
+# )
+
+# def sync_checklists_2(small_selected, large_selected):
+#     ctg = callback_context
+#     input_id = ctg.triggered[0]["prop_id"].split(".")[0]
+#     # print(input_id)
+
+#     if input_id == "cat_small_0":
+#         large_selected = list(category.keys())[0] if set(small_selected) == set(category.get('가구')) else []
+#         # print(small_selected)
+#         # print(category.get('가구'))
+#         # print(large_selected)
+#     else:
+#         small_selected = category.get('가구') if large_selected else []
+#     return small_selected, large_selected
+
+
+
+# def update(ignore):
+#     return np.random.uniform()
+
+# for i in range(20):
+#     app.callback(
+#         dash.dependencies.Output('input %i' % i, 'value'),
+#         [dash.dependencies.Input('button populate', 'n_clicks')]
+#     )(update)
+
+
+# ---
+# def make_checklist(category):
+#     return html.Div(children=[
+#         dcc.Checklist([k], [], id='cat_large_'+ str(index)),
+#         html.Div(children=[
+#             dcc.Checklist(v, [], id='cat_small_'+ str(index)),
+#             ], style={'text-indent':'15px'}),
+#         html.Br(),
+#     ])
+        
+# checklists = []
+# for index,(k,v) in enumerate(category.items()):
+#     # print(index, k,v)
+#     checklists.append(make_checklist(enumerate(category.items())))
 
 
 
@@ -196,18 +258,21 @@ def render_content(tab):
         fig.add_trace(go.Bar(x=week,y=sum_prc,name='매출총합',text=sum_prc,textposition='auto',marker_color='rgb(26, 118, 255)'))
         fig.add_trace(go.Bar(x=week,y=date_count,name='매출건수',text=date_count,textposition='auto',marker_color='rgb(55, 83, 109)'))
         fig.update_layout(
-                        title='2022년 업종별 온라인 시장 현황 [주별]',titlefont_size=20,
+                        # title='2022년 업종별 온라인 시장 현황 [주별]',titlefont_size=20,                      
+                        # title=go.layout.Title(text="2022년 업종별 온라인 시장 현황 [주별]", font=dict(family="Courier New, monospace",size=18,color="RebeccaPurple")),
+                        title=go.layout.Title(text="2022년 업종별 온라인 시장 현황 [주별]", font=dict(size=18,color='green'), font),
                         plot_bgcolor='rgba(243, 249, 252, 0.92)',
                         xaxis=dict(title='주차',tickfont_size=14),
                         yaxis=dict(title='단위:천만',titlefont_size=16,tickfont_size=14),
                         legend=dict(x=0,y=1.0,bgcolor='rgba(255, 255, 255, 0)',bordercolor='rgba(255, 255, 255, 0)'),
                         barmode='group',
                         bargap=0.5, # gap between bars of adjacent location coordinates.
-                        bargroupgap=0.5 # gap between bars of the same location coordinate.
-                        ,
+                        bargroupgap=0.5, # gap between bars of the same location coordinate.
+                        
                         )
         
         return html.Div([
+            # html.H3("test"),
             html.Div(children=[           
                     dcc.Graph(figure=fig)
                     ], style={'height':'10%'}),
