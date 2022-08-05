@@ -7,33 +7,33 @@
 from base64 import encode
 from pydoc import classname
 from tkinter.font import Font
-from turtle import bgcolor, color, left
+from turtle import bgcolor, color, left, width
 from unicodedata import category
 
 from dash import dash, dcc, html, Input, Output, State, callback_context
 from matplotlib import backend_tools, style
-from matplotlib.font_manager import _Style, FontEntry, FontProperties
-from numpy import size
+from matplotlib.font_manager import afmFontProperty
+from matplotlib.pyplot import legend, margins
+# from matplotlib.font_manager import style, FontEntry, FontProperties
+from numpy import pad, size
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 import openpyxl
 import datetime
 
+from pyrsistent import b
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 
 
 ## 데이터 불러오기
-original_data = pd.read_excel('python/test/dash_test/일룸_책상_구매데이터_1차_220513_220626_v0.1_220629_사후분석.xlsx')
-oh_test = pd.read_csv("python/test/dash_test/oh_매출테스트.csv")
+# original_data = pd.read_excel('python/test/dash_test/일룸_책상_구매데이터_1차_220513_220626_v0.1_220629_사후분석.xlsx')
+# oh_test = pd.read_csv("python/test/dash_test/oh_매출테스트.csv")
 # python\test\dash_test\oh_매출테스트.csv
-
-
-
-
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+week_data = pd.read_csv('python/test/dash_test/week_data.csv')
 
 
 
@@ -45,30 +45,14 @@ category = {
 }
 
 
+
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
     
-
-date_sum_prc = pd.DataFrame(original_data.groupby('date')['item_prc'].sum())
-date_count = pd.DataFrame(original_data.groupby('date')['item_title'].count())
-result_1 = pd.concat([date_sum_prc,date_count],axis=1).reset_index()
-test = []
-for i in result_1['date']:
-    test.append(datetime.datetime.strptime(str(i),'%Y%m%d').date())
-result_1 = pd.concat([result_1,pd.DataFrame(test)], axis=1,names='date_3')
-
-test = []
-for i in result_1[0]:
-    test.append(datetime.datetime.isocalendar(i).week)
-result_1 = pd.concat([result_1,pd.DataFrame(test)], axis=1)
-result_1.columns=['date','item_prc','count','date_2','week']
-result_2 = result_1.groupby('week').sum().reset_index()
-result_2['item_prc_2'] = result_2['item_prc'].astype('str').str[:-7]
-result_2['item_prc_2'] = result_2['item_prc_2'].astype('int')
-result_2['item_prc_3'] = result_2['item_prc'].astype('str').str[:-6].astype('int')
-
-week = list(result_2['week'].astype('str'))
-sum_prc=list(result_2['item_prc_3'])
-date_count=list(result_2['count'])
-
+date=list(week_data['date'])
+week = list(week_data['week'].astype('str'))
+sum_prc=list(week_data['item_prc_2'])
+date_count=list(week_data['count'])
 
 
 def make_checklist(category):
@@ -78,6 +62,7 @@ def make_checklist(category):
             dcc.Checklist(v, [], id='cat_small_'+ str(index)),
             ], style={'text-indent':'15px'}),
         html.Br(),
+        html.Br()
     ])
         
 checklists = []
@@ -95,14 +80,10 @@ app.layout = html.Div([
     html.Div([
         html.Div(id='test_output',children=[html.Br()], style={'float':'left', 'width':'5%'}),
         html.Div(children=[
-
             html.Br(),
             html.Br(),
             html.Br(),
             html.Br(),
-            html.Br(),
-            
-            
             html.Div(checklists),
             html.Br(),
             html.Br(),
@@ -114,8 +95,7 @@ app.layout = html.Div([
             #         ])
             
             
-            
-        ], style={'float':'left', 'width':'10%', 'border-right':'1px solid black', 'font-size':'17px'})  
+        ], style={'float':'left', 'width':'8%', 'border-right':'1px solid black', 'font-size':'17px','color':'dimgray'})  
         
         ]),
         
@@ -123,14 +103,13 @@ app.layout = html.Div([
     html.Div(children=[
         html.Div(children=[        
         dcc.Tabs(id='tabs-example-1', value='tab-1', children=[
-        dcc.Tab(label='업종별 온라인 시장 현황', value='tab-1',),
-        dcc.Tab(label='브랜드별 시장 포지션', value='tab-2'),
-        dcc.Tab(label='브랜드별 판매 채널', value='tab-3'),
+            dcc.Tab(label='업종별 온라인 시장 현황', value='tab-1'),
+            dcc.Tab(label='브랜드별 시장 포지션', value='tab-2'),
+            dcc.Tab(label='브랜드별 판매 채널', value='tab-3'),
         ]),
-        html.Div(id='tabs-example-content-1'),
-        
+        html.Div(id='tabs-example-content-1'),        
 
-        ], style={'float':'left', 'width':'75%'})     
+        ], style={'float':'left', 'width':'80%','font-size':'20px'})     
          
     ],)
     
@@ -255,33 +234,65 @@ def sync_checklists_2(small_selected, large_selected):
 def render_content(tab):
     if tab == 'tab-1':
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=week,y=sum_prc,name='매출총합',text=sum_prc,textposition='auto',marker_color='rgb(26, 118, 255)'))
-        fig.add_trace(go.Bar(x=week,y=date_count,name='매출건수',text=date_count,textposition='auto',marker_color='rgb(55, 83, 109)'))
+        fig.add_trace(go.Bar(x=week,y=sum_prc,name='매출총합',text=sum_prc,textposition='auto',marker_color='rgb(55, 83, 109)',customdata=date_count,
+                             hovertemplate="매출: %{y} (만)원<br>건수: %{customdata} 건",
+                                    ))
+        fig.add_trace(go.Bar(x=week,y=date_count,name='매출건수',text=date_count,textposition='outside',marker_color='rgb(26, 118, 255)'))
         fig.update_layout(
                         # title='2022년 업종별 온라인 시장 현황 [주별]',titlefont_size=20,                      
                         # title=go.layout.Title(text="2022년 업종별 온라인 시장 현황 [주별]", font=dict(family="Courier New, monospace",size=18,color="RebeccaPurple")),
-                        title=go.layout.Title(text="2022년 업종별 온라인 시장 현황 [주별]", font=dict(size=18,color='green'), font),
+                        margin=go.layout.Margin(t=0,b=0,r=0),                
                         plot_bgcolor='rgba(243, 249, 252, 0.92)',
-                        xaxis=dict(title='주차',tickfont_size=14),
-                        yaxis=dict(title='단위:천만',titlefont_size=16,tickfont_size=14),
-                        legend=dict(x=0,y=1.0,bgcolor='rgba(255, 255, 255, 0)',bordercolor='rgba(255, 255, 255, 0)'),
+                        xaxis=dict(title='주차',titlefont_size=10,tickfont_size=14),
+                        yaxis=dict(title='단위:천만',titlefont_size=12,tickfont_size=14),
+                        legend=dict(x=0,y=1.0,bgcolor='rgba(255, 255, 255, 0)',bordercolor='rgba(255, 255, 255, 0)',),
                         barmode='group',
-                        bargap=0.5, # gap between bars of adjacent location coordinates.
-                        bargroupgap=0.5, # gap between bars of the same location coordinate.
+                        bargap=0.2, # gap between bars of adjacent location coordinates.
+                        bargroupgap=0.2, # gap between bars of the same location coordinate.
+                        height=385
                         
                         )
         
+        
+        
         return html.Div([
-            # html.H3("test"),
+            
+            html.Div(children=[
+                html.P(children=["2022년 업종별 온라인 시장 현황 [월별]"],),
+            ],style={'background-color':'Gainsboro',
+                     'border-radius':'50px',
+                     'width':'40%',
+                     'text-indent':'55px',
+                     'margin-left':'30px',
+                     'margin-top':'20px',
+                     'font-weight':'bold',
+                     'font-size':'20px',
+                     'color':'dimgray'
+                     }),
+            
             html.Div(children=[           
                     dcc.Graph(figure=fig)
-                    ], style={'height':'10%'}),
+                    ], style={'height':'30%'}),
+            
+            
+            html.Div(children=[
+                html.P(children=["2022년 업종별 온라인 시장 현황 [주별]"],),
+            ],style={'background-color':'Gainsboro',
+                     'border-radius':'50px',
+                     'width':'40%',
+                     'text-indent':'55px',
+                     'margin-left':'30px',
+                     'margin-top':'20px',
+                     'font-weight':'bold',
+                     'font-size':'20px',
+                     'color':'dimgray'
+                     }),
             
             
             html.Div(children=[            
                     # html.H3('Tab content 2'),
                     dcc.Graph(figure=fig)
-                    ], style={'height':'50%'})
+                    ], style={'height':'30%'})
         ])
         
         
@@ -301,13 +312,16 @@ def render_content(tab):
 
         ]),
     elif tab == 'tab-3':
-        fig = go.Figure(data=[go.Scatter(x=[1, 2, 3], y=[4, 1, 2])])
-
+        # fig = go.Figure(data=[go.Scatter(x=[1, 2, 3], y=[4, 1, 2])])
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=week,y=sum_prc,name='매출총합',text=sum_prc,textposition='auto',marker_color='rgb(26, 118, 255)'))
+        fig.update_layout(
+                        margin=go.layout.Margin(t=0,r=0),
+                        height=300                     
+                        )   
         return html.Div([
             
             html.H3('Tab content 3'),   
-
-
             dcc.Graph(figure=fig)
 
 
